@@ -1,89 +1,60 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- * @flow strict-local
- */
-
-import React from 'react';
-import type {Node} from 'react';
+import React, {useState} from 'react';
 import {
+  ActivityIndicator,
+  View,
+  TextInput,
+  Image,
+  Text,
+  FlatList,
+  Dimensions,
   SafeAreaView,
   ScrollView,
-  StatusBar,
   StyleSheet,
-  Text,
-  useColorScheme,
-  View,
 } from 'react-native';
+import useSWR from 'swr';
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+const {width, height} = Dimensions.get('window');
 
-const Section = ({children, title}): Node => {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
+const fetcher = url => fetch(url).then(res => res.json());
+
+const App = () => {
+  const [query, setQuery] = useState('');
+  const {data, error, isLoading} = useSWR(
+    query ? `https://api.github.com/search/users?q=${query}` : null,
+    fetcher,
   );
-};
 
-const App: () => Node = () => {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  };
+  const users = data ? data.items : [];
 
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+    <SafeAreaView>
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.js</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
+        style={styles.backgroundStyle}>
+        <View style={styles.container}>
+          <TextInput
+            style={styles.search}
+            placeholder="Search All GitHub Users..."
+            onChangeText={text => setQuery(text)}
+          />
+
+          {isLoading && <ActivityIndicator />}
+
+          {!error && (
+            <FlatList
+              data={users}
+              keyExtractor={item => item.login}
+              renderItem={({item}) => (
+                <View style={styles.userList}>
+                  <Image
+                    source={{uri: item.avatar_url}}
+                    style={styles.avatar}
+                  />
+                  <Text style={styles.username}>{item.login}</Text>
+                </View>
+              )}
+            />
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -91,21 +62,32 @@ const App: () => Node = () => {
 };
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
+  container: {
+    flex: 1,
+    padding: 15,
   },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
+  search: {
+    height: height * 0.05,
+    borderColor: 'blue',
+    borderWidth: 1,
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    marginBottom: 15,
+    fontSize: height * 0.02,
   },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
+  userList: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
   },
-  highlight: {
-    fontWeight: '700',
+  avatar: {
+    width: width * 0.1,
+    height: width * 0.1,
+    borderRadius: width * 0.05,
+    marginRight: width * 0.025,
+  },
+  username: {
+    fontSize: height * 0.02,
   },
 });
 
